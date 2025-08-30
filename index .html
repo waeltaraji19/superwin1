@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>superwin1</title>
+<style>
+  body { background-color: #8B0000; color: white; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+  header { background-color: #5a0000; padding: 10px 20px; text-align: center; font-size: 24px; font-weight: bold; }
+  main { padding: 20px; max-width: 700px; margin: auto; }
+  label { display: block; margin: 10px 0 5px; }
+  input[type="text"], input[type="password"], select, input[type="number"] { width: 100%; padding: 8px; margin-bottom: 15px; border-radius: 5px; border: none; }
+  button { background-color: #a00000; border: none; color: white; padding: 10px 15px; cursor: pointer; border-radius: 5px; }
+  button:hover { background-color: #d20000; }
+  .warning { background: #ff6666; padding: 10px; margin-bottom: 15px; border-radius: 5px; color: #330000; font-weight: bold; }
+  footer { background-color: #5a0000; color: #ccc; text-align: center; padding: 10px; position: fixed; width: 100%; bottom: 0; }
+  .section { border: 1px solid #550000; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
+  .balance { font-weight: bold; font-size: 20px; margin-top: 10px; text-align: center; }
+  
+  /* تبويبات المستخدم */
+  .tabs { display: flex; justify-content: center; margin-bottom: 15px; }
+  .tab-button {
+    background: #5a0000;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    margin: 0 5px;
+    font-weight: bold;
+  }
+  .tab-button.active {
+    background: #d20000;
+  }
+  .tab-content { 
+    background: #5a0000; 
+    padding: 15px; 
+    border-radius: 0 5px 5px 5px; 
+    min-height: 320px;
+  }
+  
+  /* لعبة السلوت - ستايل البكرات */
+  .reels {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  .reel {
+    width: 70px;
+    height: 70px;
+    margin: 0 5px;
+    background: #fff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    user-select: none;
+    transition: transform 0.5s ease;
+  }
+  .result { font-size: 18px; font-weight: bold; margin-top: 10px; text-align:center; }
+  
+  /* تأثير دوران */
+  .spinning {
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotateX(0deg); }
+    100% { transform: rotateX(360deg); }
+  }
+</style>
+</head>
+<body>
+<header>superwin1</header>
+<main>
+
+  <!-- تسجيل الدخول -->
+  <div id="loginDiv">
+    <h2>تسجيل الدخول</h2>
+    <div class="warning" id="warningMessage" style="display:none;">لا يمكن سحب الأرباح إذا تجاوزت 10 مليون.</div>
+    <label for="username">اسم المستخدم:</label>
+    <input type="text" id="username" placeholder="أدخل اسم المستخدم" />
+    <label for="password">كلمة السر:</label>
+    <input type="password" id="password" placeholder="أدخل كلمة السر" />
+    <label for="role">الدور:</label>
+    <select id="role">
+      <option value="user">مستخدم</option>
+      <option value="admin">أدمن</option>
+    </select>
+    <button onclick="login()">تسجيل الدخول</button>
+  </div>
+
+  <!-- لوحة الأدمن -->
+  <div id="adminPanel" style="display:none;">
+    <h2>لوحة تحكم الأدمن</h2>
+
+    <div class="section">
+      <h3>الإعدادات</h3>
+      <label for="winRate">نسبة الفوز (%):</label>
+      <input type="number" id="winRate" min="0" max="100" value="50" />
+      <label for="lossRate">نسبة الخسارة (%):</label>
+      <input type="number" id="lossRate" min="0" max="100" value="50" />
+      <button onclick="saveSettings()">حفظ الإعدادات</button>
+    </div>
+
+    <div class="section">
+      <h3>حظر مستخدم</h3>
+      <input type="text" id="blockUser" placeholder="اسم المستخدم للحظر" />
+      <button onclick="blockUser()">حظر</button>
+      <div id="blockedUsersList"></div>
+    </div>
+
+    <div class="section">
+      <h3>شحن رصيد مستخدم</h3>
+      <input type="text" id="chargeUser" placeholder="اسم المستخدم للشحن" />
+      <input type="number" id="chargeAmount" placeholder="المبلغ" min="0.2" step="0.01" />
+      <button onclick="chargeUserBalance()">شحن</button>
+    </div>
+
+    <div class="section">
+      <h3>إنشاء حساب مستخدم جديد</h3>
+      <input type="text" id="newUserUsername" placeholder="اسم المستخدم الجديد" />
+      <input type="password" id="newUserPassword" placeholder="كلمة السر الجديدة" />
+      <button onclick="createUser()">إنشاء حساب</button>
+    </div>
+
+    <button onclick="logout()">تسجيل خروج</button>
+  </div>
+
+  <!-- لوحة المستخدم -->
+  <div id="userPanel" style="display:none;">
+    <h2>مرحبا <span id="displayUser"></span></h2>
+    <div class="balance">الرصيد: <span id="userBalance">0.00</span> دينار</div>
+    <p>يمكنك اللعب برهانات من 0.20 إلى 50.00</p>
+    <button onclick="logout()">تسجيل خروج</button>
+
+    <!-- تبويبات الألعاب -->
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab('fruits')">سلوت الفواكه</button>
+      <button class="tab-button" onclick="switchTab('dragon')">سلوت التنين</button>
+      <button class="tab-button" onclick="switchTab('joker')">سلوت الجوكر</button>
+    </div>
+
+    <!-- محتوى الألعاب -->
+
+    <!-- سلوت الفواكه (Hot Fruits 20 style) -->
+    <div id="fruits" class="tab-content">
+      <label for="betFruits">اختر مبلغ الرهان:</label>
+      <select id="betFruits">
+        <option value="0.20">0.20</option>
+        <option value="1.00">1.00</option>
+        <option value="5.00">5.00</option>
+        <option value="10.00">10.00</option>
+        <option value="20.00">20.00</option>
+        <option value="50.00">50.00</option>
+      </select>
+      <button onclick="playFruits()">العب الآن</button>
+
+      <div class="gameslot">
+        <div class="reels" id="fruitsReels">
+          <div class="reel" id="fruitsReel1">🍒</div>
+          <div class="reel" id="fruitsReel2">🍋</div>
+          <div class="reel" id="fruitsReel3">🍉</div>
+          <div class="reel" id="fruitsReel4">🍇</div>
+          <div class="reel" id="fruitsReel5">🍊</div>
+        </div>
+        <div class="result" id="fruitsResult"></div>
+      </div>
+    </div>
+
+    <!-- سلوت التنين (Wild Dragon style) -->
+    <div id="dragon" class="tab-content" style="display:none;">
+      <label for="betDragon">اختر مبلغ الرهان:</label>
+      <select id="betDragon">
+        <option value="0.20">0.20</option>
+        <option value="1.00">1.00</option>
+        <option value="5.00">5.00</option>
+        <option value="10.00">10.00</option>
+        <option value="20.00">20.00</option>
+        <option value="50.00">50.00</option>
+      </select>
+      <button onclick="playDragon()">العب الآن</button>
+
+      <div class="gameslot">
+        <div class="reels" id="dragonReels">
+          <div class="reel" id="dragonReel1">🐉</div>
+          <div class="reel" id="dragonReel2">🔥</div>
+          <div class="reel" id="dragonReel3">🐲</div>
+          <div class="reel" id="dragonReel4">🌪️</div>
+          <div class="reel" id="dragonReel5">💥</div>
+        </div>
+        <div class="result" id="dragonResult"></div>
+      </div>
+    </div>
+
+    <!-- سلوت الجوكر (Lucky Joker 10 style) -->
+    <div id="joker" class="tab-content" style="display:none;">
+      <label for="betJoker">اختر مبلغ الرهان:</label>
+      <select id="betJoker">
+        <option value="0.20">0.20</option>
+        <option value="1.00">1.00</option>
+        <option value="5.00">5.00</option>
+        <option value="10.00">10.00</option>
+        <option value="20.00">20.00</option>
+        <option value="50.00">50.00</option>
+      </select>
+      <button onclick="playJoker()">العب الآن</button>
+
+      <div class="gameslot">
+        <div class="reels" id="jokerReels">
+          <div class="reel" id="jokerReel1">🎭</div>
+          <div class="reel" id="jokerReel2">🔔</div>
+          <div class="reel" id="jokerReel3">⭐</div>
+          <div class="reel" id="jokerReel4">🍀</div>
+          <div class="reel" id="jokerReel5">💎</div>
+        </div>
+        <div class="result" id="jokerResult"></div>
+      </div>
+    </div>
+
+    <!-- تغيير بيانات الحساب -->
+    <h3>تغيير بيانات الحساب</h3>
+    <label for="newUsername">تغيير اسم المستخدم:</label>
+    <input type="text" id="newUsername" placeholder="اسم جديد" />
+    <label for="newPassword">تغيير كلمة السر:</label>
+    <input type="password" id="newPassword" placeholder="كلمة سر جديدة" />
+    <button onclick="changeAccount()">حفظ التغييرات</button>
+  </div>
+
+</main>
+<footer>© 2025 superwin1</footer>
+<script>
+  let users = {
+    "admin": {password: "admin123", role: "admin", balance: 0, blocked: false},
+    "user1": {password: "user123", role: "user", balance: 100, blocked: false}
+  };
+  let blockedUsers = [];
+  let currentUser = null;
+  let winRate = 50;
+  let lossRate = 50;
+
+  const fruitsSymbols = ["🍒", "🍋", "🍉", "🍇", "🍊"];
+  const dragonSymbols = ["🐉", "🔥", "🐲", "🌪️", "💥"];
+  const jokerSymbols = ["🎭", "🔔", "⭐", "🍀", "💎"];
+
+  // --- تحميل البيانات من localStorage ---
+  function loadData() {
+    const loadedUsers = localStorage.getItem('superwin1_users');
+    const loadedBlocked = localStorage.getItem('superwin1_blockedUsers');
+    const loadedWinRate = localStorage.getItem('superwin1_winRate');
+    const loadedLossRate = localStorage.getItem('superwin1_lossRate');
+    if (loadedUsers) users = JSON.parse(loadedUsers);
+    if (loadedBlocked) blockedUsers = JSON.parse(loadedBlocked);
+    if (loadedWinRate) winRate = parseInt(loadedWinRate);
+    if (loadedLossRate) lossRate = parseInt(loadedLossRate);
+  }
+
+  // --- حفظ البيانات في localStorage ---
+  function saveData() {
+    localStorage.setItem('superwin1_users', JSON.stringify(users));
+    localStorage.setItem('superwin1_blockedUsers', JSON.stringify(blockedUsers));
+    localStorage.setItem('superwin1_winRate', winRate);
+    localStorage.setItem('superwin1_lossRate', lossRate);
+  }
+
+  loadData();
+
+  // -- تسجيل الدخول --
+  function login() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const role = document.getElementById("role").value;
+    if (!users[username]) {
+      alert("اسم المستخدم غير موجود");
+      return;
+    }
+    if (users[username].password !== password || users[username].role !== role) {
+      alert("اسم المستخدم أو كلمة السر أو الدور غير صحيحة");
+      return;
+    }
+    if (users[username].blocked) {
+      alert("هذا المستخدم محظور");
+      return;
+    }
+    currentUser = username;
+    if (role === "admin") {
+      document.getElementById("loginDiv").style.display = "none";
+      document.getElementById("adminPanel").style.display = "block";
+      document.getElementById("winRate").value = winRate;
+      document.getElementById("lossRate").value = lossRate;
+      updateBlockedUsersList();
+    } else {
+      document.getElementById("loginDiv").style.display = "none";
+      document.getElementById("userPanel").style.display = "block";
+      document.getElementById("displayUser").innerText = currentUser;
+      updateBalance();
+      switchTab('fruits'); // ابدأ بلعبة الفواكه عند الدخول
+      if (users[currentUser].balance > 10000000) {
+        document.getElementById("warningMessage").style.display = "block";
+      } else {
+        document.getElementById("warningMessage").style.display = "none";
+      }
+    }
+  }
+
+  // -- تسجيل الخروج --
+  function logout() {
+    currentUser = null;
+    document.getElementById("loginDiv").style.display = "block";
+    document.getElementById("adminPanel").style.display = "none";
+    document.getElementById("userPanel").style.display = "none";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("newUsername").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("chargeUser").value = "";
+    document.getElementById("chargeAmount").value = "";
+    document.getElementById("newUserUsername").value = "";
+    document.getElementById("newUserPassword").value = "";
+    document.getElementById("blockUser").value = "";
+    document.getElementById("warningMessage").style.display = "none";
+    resetAllReels();
+    clearAllResults();
+  }
+
+  // -- إعدادات الأدمن --
+  function saveSettings() {
+    winRate = parseInt(document.getElementById("winRate").value);
+    lossRate = parseInt(document.getElementById("lossRate").value);
+    if (winRate + lossRate !== 100) {
+      alert("يجب أن يكون مجموع نسبة الفوز والخسارة 100%");
+      return;
+    }
+    saveData();
+    alert("تم حفظ الإعدادات");
+  }
+
+  // -- حظر مستخدم --
+  function blockUser() {
+    const userToBlock = document.getElementById("blockUser").value.trim();
+    if (!users[userToBlock]) {
+      alert("اسم المستخدم غير موجود");
+      return;
+    }
+    users[userToBlock].blocked = true;
+    if (!blockedUsers.includes(userToBlock)) {
+      blockedUsers.push(userToBlock);
+    }
+    saveData();
+    updateBlockedUsersList();
+    alert("تم حظر المستخدم: " + userToBlock);
+  }
+
+  function updateBlockedUsersList() {
+    const listDiv = document.getElementById("blockedUsersList");
+    if(blockedUsers.length === 0) {
+      listDiv.innerHTML = "<b>لا يوجد مستخدمين محظورين حالياً.</b>";
+    } else {
+      listDiv.innerHTML = "<b>المستخدمين المحظورين:</b><br>" + blockedUsers.join(", ");
+    }
+  }
+
+  // -- شحن رصيد مستخدم (صلاحية الأدمن فقط) --
+  function chargeUserBalance() {
+    if (users[currentUser].role !== "admin") {
+      alert("غير مسموح لك بشحن الرصيد");
+      return;
+    }
+    const userToCharge = document.getElementById("chargeUser").value.trim();
+    const amount = parseFloat(document.getElementById("chargeAmount").value);
+    if (!users[userToCharge]) {
+      alert("اسم المستخدم غير موجود");
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      alert("أدخل مبلغ صالح للشحن");
+      return;
+    }
+    users[userToCharge].balance += amount;
+    saveData();
+    alert("تم شحن " + amount.toFixed(2) + " دينار إلى " + userToCharge);
+  }
+
+  // -- إنشاء حساب مستخدم جديد --
+  function createUser() {
+    const newUser = document.getElementById("newUserUsername").value.trim();
+    const newPass = document.getElementById("newUserPassword").value;
+    if (newUser.length === 0 || newPass.length === 0) {
+      alert("الرجاء إدخال اسم مستخدم وكلمة سر");
+      return;
+    }
+    if (users[newUser]) {
+      alert("اسم المستخدم موجود مسبقاً");
+      return;
+    }
+    users[newUser] = {password: newPass, role: "user", balance: 0, blocked: false};
+    saveData();
+    alert("تم إنشاء حساب جديد: " + newUser);
+  }
+
+  // -- تغيير بيانات الحساب للمستخدم --
+  function changeAccount() {
+    if (!currentUser) return;
+    const newUsername = document.getElementById("newUsername").value.trim();
+    const newPassword = document.getElementById("newPassword").value;
+    if (newUsername.length === 0 && newPassword.length === 0) {
+      alert("لم تدخل أي تغييرات");
+      return;
+    }
+
+    if (newUsername.length > 0) {
+      if (users[newUsername]) {
+        alert("اسم المستخدم الجديد موجود مسبقاً");
+        return;
+      }
+      // نقل بيانات المستخدم القديم إلى الجديد
+      users[newUsername] = {...users[currentUser]};
+      delete users[currentUser];
+      currentUser = newUsername;
+      document.getElementById("displayUser").innerText = currentUser;
+    }
+    if (newPassword.length > 0) {
+      users[currentUser].password = newPassword;
+    }
+    saveData();
+    alert("تم تحديث بيانات الحساب");
+    document.getElementById("newUsername").value = "";
+    document.getElementById("newPassword").value = "";
+  }
+
+  // -- تحديث عرض الرصيد --
+  function updateBalance() {
+    if (!currentUser) return;
+    document.getElementById("userBalance").innerText = users[currentUser].balance.toFixed(2);
+    if (users[currentUser].balance > 10000000) {
+      document.getElementById("warningMessage").style.display = "block";
+    } else {
+      document.getElementById("warningMessage").style.display = "none";
+    }
+  }
+
+  // -- تبويبات الألعاب --
+  function switchTab(tabName) {
+    const tabs = ['fruits', 'dragon', 'joker'];
+    tabs.forEach(t => {
+      document.getElementById(t).style.display = (t === tabName) ? 'block' : 'none';
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(tabName.charAt(0).toUpperCase() + tabName.slice(1)));
+      });
+    });
+  }
+
+  // -- اللعب: سلوت الفواكه --
+  function playFruits() {
+    if (!currentUser) return alert("يجب تسجيل الدخول");
+    const bet = parseFloat(document.getElementById("betFruits").value);
+    if (bet < 0.2 || bet > 50) return alert("مبلغ الرهان يجب أن يكون بين 0.20 و 50.00");
+    if (users[currentUser].balance < bet) return alert("رصيدك لا يكفي للعب");
+
+    users[currentUser].balance -= bet;
+    updateBalance();
+
+    spinReels("fruitsReels", fruitsSymbols, 5, () => {
+      // نتيجة عشوائية بناءً على winRate
+      const won = Math.random() * 100 < winRate;
+      let multiplier = 0;
+      if (won) {
+        multiplier = 2 + Math.floor(Math.random() * 5); // مضاعف من 2 إلى 6
+        const winAmount = bet * multiplier;
+        users[currentUser].balance += winAmount;
+        saveData();
+        updateBalance();
+        document.getElementById("fruitsResult").innerText = `فزت! المبلغ: ${winAmount.toFixed(2)} دينار (x${multiplier})`;
+      } else {
+        saveData();
+        document.getElementById("fruitsResult").innerText = "لم تفز، حاول مرة أخرى!";
+      }
+    });
+  }
+
+  // -- اللعب: سلوت التنين --
+  function playDragon() {
+    if (!currentUser) return alert("يجب تسجيل الدخول");
+    const bet = parseFloat(document.getElementById("betDragon").value);
+    if (bet < 0.2 || bet > 50) return alert("مبلغ الرهان يجب أن يكون بين 0.20 و 50.00");
+    if (users[currentUser].balance < bet) return alert("رصيدك لا يكفي للعب");
+
+    users[currentUser].balance -= bet;
+    updateBalance();
+
+    spinReels("dragonReels", dragonSymbols, 5, () => {
+      const won = Math.random() * 100 < winRate;
+      let multiplier = 0;
+      if (won) {
+        multiplier = 3 + Math.floor(Math.random() * 4); // 3 إلى 6
+        const winAmount = bet * multiplier;
+        users[currentUser].balance += winAmount;
+        saveData();
+        updateBalance();
+        document.getElementById("dragonResult").innerText = `فزت! المبلغ: ${winAmount.toFixed(2)} دينار (x${multiplier})`;
+      } else {
+        saveData();
+        document.getElementById("dragonResult").innerText = "لم تفز، حاول مرة أخرى!";
+      }
+    });
+  }
+
+  // -- اللعب: سلوت الجوكر --
+  function playJoker() {
+    if (!currentUser) return alert("يجب تسجيل الدخول");
+    const bet = parseFloat(document.getElementById("betJoker").value);
+    if (bet < 0.2 || bet > 50) return alert("مبلغ الرهان يجب أن يكون بين 0.20 و 50.00");
+    if (users[currentUser].balance < bet) return alert("رصيدك لا يكفي للعب");
+
+    users[currentUser].balance -= bet;
+    updateBalance();
+
+    spinReels("jokerReels", jokerSymbols, 5, () => {
+      const won = Math.random() * 100 < winRate;
+      let multiplier = 0;
+      if (won) {
+        multiplier = 1 + Math.floor(Math.random() * 7); // 1 إلى 7
+        const winAmount = bet * multiplier;
+        users[currentUser].balance += winAmount;
+        saveData();
+        updateBalance();
+        document.getElementById("jokerResult").innerText = `فزت! المبلغ: ${winAmount.toFixed(2)} دينار (x${multiplier})`;
+      } else {
+        saveData();
+        document.getElementById("jokerResult").innerText = "لم تفز، حاول مرة أخرى!";
+      }
+    });
+  }
+
+  // -- دالة دوران البكرات مع تأثير --
+  function spinReels(containerId, symbolsArray, reelsCount, callback) {
+    const container = document.getElementById(containerId);
+    let spinsDone = 0;
+    for (let i = 0; i < reelsCount; i++) {
+      const reel = container.children[i];
+      reel.classList.add("spinning");
+      // بعد وقت عشوائي توقيف الدوران
+      setTimeout(() => {
+        reel.classList.remove("spinning");
+        const sym = symbolsArray[Math.floor(Math.random() * symbolsArray.length)];
+        reel.innerText = sym;
+        spinsDone++;
+        if (spinsDone === reelsCount) callback();
+      }, 600 + Math.random() * 600);
+    }
+  }
+
+  // -- إعادة تعيين البكرات --
+  function resetAllReels() {
+    ["fruitsReels", "dragonReels", "jokerReels"].forEach(id => {
+      const container = document.getElementById(id);
+      if (!container) return;
+      for(let i=0; i < container.children.length; i++) {
+        container.children[i].innerText = "";
+      }
+    });
+  }
+
+  // -- مسح نتائج اللعب --
+  function clearAllResults() {
+    ["fruitsResult", "dragonResult", "jokerResult"].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.innerText = "";
+    });
+  }
+
+</script>
+</body>
+</html>
